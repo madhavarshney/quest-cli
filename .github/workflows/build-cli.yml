@@ -11,6 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: false
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -22,12 +23,14 @@ jobs:
         python-version: 3.9
 
     - name: Install dependencies
+      shell: bash
       run: |
         python -m pip install --upgrade pip
         pip install flake8 pyinstaller requests
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Lint with flake8
+      shell: bash
       run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -39,13 +42,13 @@ jobs:
         pyinstaller quest-cli.py
         
     - name: Generate archive from dist
+      shell: bash
       run: |
         if [ "$RUNNER_OS" == "Windows" ]; then
             powershell -Command "Compress-Archive -Path dist/quest-cli/ -DestinationPath quest-cli.zip"
         else
             tar -C dist -czvf quest-cli.tar.gz quest-cli/
         fi
-      shell: bash
 
     - name: Archive build output
       uses: actions/upload-artifact@v2
