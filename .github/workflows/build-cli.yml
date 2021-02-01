@@ -8,7 +8,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
@@ -31,13 +34,21 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    - name: Build CLI Module
+    - name: Build CLI module
       run: |
         pyinstaller quest-cli.py
-        tar -C dist -czvf quest-cli.tar.gz quest-cli/
+        
+    - name: Generate archive from dist
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+            powershell -Command "Compress-Archive -Path dist/quest-cli/ -DestinationPath quest-cli.zip"
+        else
+            tar -C dist -czvf quest-cli.tar.gz quest-cli/
+        fi
+      shell: bash
 
     - name: Archive build output
       uses: actions/upload-artifact@v2
       with:
-        name: quest-cli-linux
-        path:  quest-cli.tar.gz
+        name: quest-cli-${{ matrix.os }}
+        path: ${{ matrix.os == 'windows-latest' && 'quest-cli.zip || 'quest-cli.tar.gz' }}
